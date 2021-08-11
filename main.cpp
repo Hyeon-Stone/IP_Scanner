@@ -63,6 +63,8 @@ void find_ip(pcap_t* handle, uint8_t *source_mac, uint32_t source_ip){
     int check[244];
     int timeout = 15;
     struct timeval start, end, current;
+    int cnt = 0;
+
 
     memset(check,0,sizeof(check));
     memset(arp_request.eth.des, 0xFF, 6);
@@ -79,6 +81,8 @@ void find_ip(pcap_t* handle, uint8_t *source_mac, uint32_t source_ip){
     arp_request.arp.src_ip = htonl(source_ip);
 
     memset(arp_request.arp.tag_mac, 0x00, 6);
+
+    check[source_ip & 0xFF] = 1;
 
     for(int i=1; i<255; i++){
         a = ntohl(source_ip) & 0xFF;
@@ -106,6 +110,7 @@ void find_ip(pcap_t* handle, uint8_t *source_mac, uint32_t source_ip){
                     printf("IP : %d.%d.%d.%d\n",ntohl(capture->arp.src_ip <<24) & 0xFF, ntohl(capture->arp.src_ip <<16)&0xFF,ntohl(capture->arp.src_ip <<8)&0xFF,ntohl(capture->arp.src_ip )&0xFF);
                     printf("MAC : %02x:%02x:%02x:%02x:%02x:%02x \n",capture->arp.src_mac[0], capture->arp.src_mac[1],capture->arp.src_mac[2],capture->arp.src_mac[3],capture->arp.src_mac[4],capture->arp.src_mac[5]);
                     check[ntohl(capture->arp.src_ip )&0xFF] = 1;
+                    cnt++;
                 }
             }
         }
@@ -124,10 +129,14 @@ void find_ip(pcap_t* handle, uint8_t *source_mac, uint32_t source_ip){
                     printf("IP : %d.%d.%d.%d\n",ntohl(capture->arp.src_ip <<24) & 0xFF, ntohl(capture->arp.src_ip <<16)&0xFF,ntohl(capture->arp.src_ip <<8)&0xFF,ntohl(capture->arp.src_ip )&0xFF);
                     printf("MAC : %02x:%02x:%02x:%02x:%02x:%02x \n",capture->arp.src_mac[0], capture->arp.src_mac[1],capture->arp.src_mac[2],capture->arp.src_mac[3],capture->arp.src_mac[4],capture->arp.src_mac[5]);
                     check[ntohl(capture->arp.src_ip )&0xFF] = 1;
+                    cnt++;
                 }
             }
         }
     }
+    printf("=============================================\n");
+    printf("Total devices in same network(LAN) : %d + 1(My device)\n",cnt);
+    printf("=============================================\n");
 }
 
 int main(int argc, char*argv[]){
@@ -142,10 +151,11 @@ int main(int argc, char*argv[]){
     char errbuf[PCAP_ERRBUF_SIZE];
 
     my_ip = get_my_ip(dev);
+    printf("=============================================\n");
     printf("My IP : %d.%d.%d.%d\n",ntohl(my_ip) & 0xFF, ntohl(my_ip <<8)&0xFF,ntohl(my_ip <<16)&0xFF,ntohl(my_ip <<24)&0xFF);
     get_my_mac(dev,my_mac);
     printf("My MAC : %02x:%02x:%02x:%02x:%02x:%02x \n",my_mac[0], my_mac[1],my_mac[2],my_mac[3],my_mac[4],my_mac[5]);
-
+    printf("=============================================\n");
     pcap_t* handle = pcap_open_live(dev,BUFSIZ,1,1000,errbuf);
     if(handle == nullptr){
         fprintf(stderr, "couldn't open device %s(%s)\n", dev, errbuf);
